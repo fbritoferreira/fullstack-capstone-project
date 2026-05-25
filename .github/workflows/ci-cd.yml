@@ -1,0 +1,51 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install backend dependencies
+        working-directory: giftlink-backend
+        run: npm install
+
+      - name: Lint backend
+        working-directory: giftlink-backend
+        run: npx eslint . || true
+
+      - name: Install frontend dependencies
+        working-directory: giftlink-frontend
+        run: npm install
+
+      - name: Build frontend
+        working-directory: giftlink-frontend
+        run: npm run build
+
+      - name: Build Docker image
+        run: docker build -t giftlink-backend ./giftlink-backend
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to IBM Code Engine
+        run: echo "Deploying to Code Engine"
